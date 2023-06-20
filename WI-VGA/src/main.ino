@@ -1,6 +1,12 @@
 #include "lib.h"
 
-
+/*msg = "Wrong username/password! try again.";
+Serial.println("Log in Failed");
+AsyncWebServerResponse *response = request->beginResponse(301); //Sends 301 redirect
+response->addHeader("Location", "/login.html?msg=" + msg);
+response->addHeader("Cache-Control", "no-cache");
+request->send(response);
+return;*/
 
 void IMAGE_SHOW_AND_RENDER(void * param)
 {
@@ -83,6 +89,13 @@ void setup() {
   init_sd();
   check_file_structure();
   
+  logfile = SD.open("/log.txt", FILE_WRITE);
+
+  if (!logfile) {
+    Serial.println("Error opening log file!");
+    return;
+  }
+
   init_config();
   Serial.println(config.connect_wifi);
   Serial.println(config.create_AP);
@@ -186,8 +199,8 @@ SpiRamJsonDocument listsettings(SpiRamJsonDocument json,bool img) {
    DeserializationError error = deserializeJson(json, file);
         if (error) {
             // if the file didn't open, print an error:
-            Serial.println(F("Error parsing JSON "));
-            Serial.println(error.c_str());
+            log("Error parsing JSON ");Serial.println(F("Error parsing JSON "));
+           log(error.c_str());Serial.println(error.c_str());
         }
 
 
@@ -235,7 +248,10 @@ void configureWebServer() {
 
   
   server->on("/loginpage", HTTP_GET, [](AsyncWebServerRequest * request) {
+    if(!is_authenticated(request))
       request->send(SD, "/web_app/login.html", String(), false);
+    else
+      request->redirect("/");
 
   });
   server->on("/login", HTTP_POST, handleLogin);
@@ -258,12 +274,12 @@ void configureWebServer() {
   server->on("/admin", HTTP_GET, [](AsyncWebServerRequest * request) {
     String logmessage = "Client:" + request->client()->remoteIP().toString() + + " " + request->url();
 
-    if (is_authenticated(request)) {
+    if (checkUserWebAuth_Admin(request)) {
         request->send(SD, "/web_app/file_upload.html", String(), false, processor);
     } else {
       logmessage += " Auth: Failed";
       Serial.println(logmessage);
-      request->redirect("/loginpage");
+      return request->requestAuthentication();
     }
 
   });
@@ -305,22 +321,7 @@ void configureWebServer() {
     }
 
   });
-  //remove
-  server->on("/test", HTTP_GET, [](AsyncWebServerRequest * request) {
-    String logmessage = "Client:" + request->client()->remoteIP().toString() + + " " + request->url();
 
-    if (is_authenticated(request)) {
-      logmessage += " Auth: Success";
-      Serial.println(logmessage);
-      //request->send_P(200, "text/html", index_html, processor);
-      request->send(SD, "/web_app/test.html", String(), false);
-    } else {
-      logmessage += " Auth: Failed";
-      Serial.println(logmessage);
-      request->redirect("/loginpage");
-    }
-
-  });
 
    server->on("/settings", HTTP_GET, [](AsyncWebServerRequest * request) {
     String logmessage = "Client:" + request->client()->remoteIP().toString() + + " " + request->url();
@@ -402,7 +403,7 @@ void configureWebServer() {
   server->on("/reboot", HTTP_GET, [](AsyncWebServerRequest * request) {
     String logmessage = "Client:" + request->client()->remoteIP().toString() + " " + request->url();
 
-    if (is_authenticated(request)) {
+    if (is_authenticated(request)||checkUserWebAuth_Admin(request)) {
       request->send(200, "text/html", reboot_html);
       logmessage += " Auth: Success";
       Serial.println(logmessage);
@@ -417,7 +418,7 @@ void configureWebServer() {
   server->on("/listfiles", HTTP_GET, [](AsyncWebServerRequest * request)
   {
     String logmessage = "Client:" + request->client()->remoteIP().toString() + " " + request->url();
-    if (is_authenticated(request)) {
+    if (checkUserWebAuth_Admin(request)||checkUserWebAuth_Admin(request)) {
       logmessage += " Auth: Success";
       Serial.println(logmessage);
       Serial.println(listFiles(false));
@@ -431,7 +432,7 @@ void configureWebServer() {
 
   server->on("/file", HTTP_GET, [](AsyncWebServerRequest * request) {
     String logmessage = "Client:" + request->client()->remoteIP().toString() + " " + request->url();
-    if (is_authenticated(request)) {
+    if (is_authenticated(request)||checkUserWebAuth_Admin(request)) {
       logmessage += " Auth: Success";
       Serial.println(logmessage);
 
@@ -504,7 +505,7 @@ void configureWebServer() {
   });
   //delete it
   server->on("/api/listsettings", HTTP_GET, [](AsyncWebServerRequest *request) {
-     if (is_authenticated(request)) {
+    if (checkUserWebAuth_Admin(request)) {
       AsyncResponseStream *response = request->beginResponseStream("application/json");
       SpiRamJsonDocument json(100000); //Create a JSON document of 100 KB
       json=listsettings(json,true);
@@ -579,7 +580,7 @@ void configureWebServer() {
           request->redirect("/loginpage");
         }
   });
-  AsyncElegantOTA.begin(server,config.httpuser.c_str(), config.httppassword.c_str());
+  AsyncElegantOTA.begin(server,config.httpuser.c_str(), config.admin_httppassword.c_str());
 
 }
 
@@ -596,7 +597,7 @@ void notFound(AsyncWebServerRequest *request) {
 // handles uploads to the filserver
 void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
   // make sure authenticated before allowing upload
-  if (is_authenticated(request)) {
+  if (is_authenticated(request)||checkUserWebAuth_Admin(request)) {
     String logmessage = "Client:" + request->client()->remoteIP().toString() + " " + request->url();
     Serial.println(logmessage);
     if(filename.endsWith(".jpg"))
@@ -738,7 +739,7 @@ void init_wifi(bool create_AP,bool connect_wifi)
   if (!file) {
     File temp = SD.open("/settings.json", FILE_WRITE);
     doc["httpuser"] = default_httpuser;
-    doc["httppassword"] = default_httppassword;
+    doc["httppassword"] = sha1_(default_httppassword);
     doc["webserverporthttp"] = default_webserverporthttp;
     doc["ssid"] = default_ssid;
     doc["ssid_local"] = ssid_local;
@@ -764,7 +765,8 @@ void init_wifi(bool create_AP,bool connect_wifi)
             Serial.println(F("Error parsing JSON "));
             Serial.println(error.c_str());
         }
-       
+    config.admin_httpuser = default_admin_httpuser;
+    config.admin_httppassword = default_admin_httppassword;   
     config.httpuser = doc["httpuser"].as<String>();
     config.httppassword = doc["httppassword"].as<String>();
     config.webserverporthttp = doc["webserverporthttp"].as<int>();
@@ -800,7 +802,7 @@ void init_wifi(bool create_AP,bool connect_wifi)
     SpiRamJsonDocument doc(100000);
     File temp = SD.open("/settings.json", FILE_WRITE);
     doc["httpuser"] = httpuser;
-    doc["httppassword"] = httppassword;
+    doc["httppassword"] = sha1_(httppassword);
     doc["webserverporthttp"] = webserverporthttp;
     doc["ssid"] = ssid;
     doc["ssid_local"] = ssid_local;
@@ -809,7 +811,8 @@ void init_wifi(bool create_AP,bool connect_wifi)
     doc["servername"] = servername;
     doc["connect_wifi"] = connect_Wifi;
     doc["create_AP"] = create_AP;
-    
+    doc["admin_httpuser"] = default_admin_httpuser;
+    doc["admin_httppassword"] = default_admin_httppassword;
     if (serializeJson(doc, temp) == 0) {
       Serial.println(F("Failed to write to file"));
     
@@ -1009,7 +1012,7 @@ Serial.println(cookie);
 }
 if (request->hasArg("username") && request->hasArg("password")) {
 Serial.print("Found parameter: ");
-if (request->arg("username") == String(config.httpuser) && request->arg("password") == String(config.httppassword)) {
+if (request->arg("username") == String(config.httpuser) && sha1_(request->arg("password")) ==String(config.httppassword)) {
 AsyncWebServerResponse *response = request->beginResponse(301); //Sends 301 redirect
 response->addHeader("Location", "/");
 response->addHeader("Cache-Control", "no-cache");
@@ -1019,6 +1022,7 @@ Serial.println(token);
 response->addHeader("Set-Cookie", "ESPSESSIONID=" + token);
 request->send(response);
 Serial.println("Log in Successful");
+
 return;
 }
 msg = "Wrong username/password! try again.";
@@ -1049,15 +1053,34 @@ if (request->hasHeader("Cookie")) {
 Serial.print("Found cookie: ");
 String cookie = request->header("Cookie");
 Serial.println(cookie);
-String token = sha1_(String(config.httpuser) + ":" +
-String(config.httppassword) + ":" +
-request->client()->remoteIP().toString());
+String token = sha1_(String(config.httpuser) + ":" +String(config.httppassword) + ":" +request->client()->remoteIP().toString());
 //  token = sha1_(token);
+log(token);
 if (cookie.indexOf("ESPSESSIONID=" + token) != -1) {
-Serial.println("Authentication Successful");
-return true;
+  Serial.println("Authentication Successful");
+  return true;
 }
+else
+  log("Authentication Failed_token problem");
 }
+log("Authentication Failed_End");
 Serial.println("Authentication Failed");
 return false;
+}
+
+bool checkUserWebAuth_Admin(AsyncWebServerRequest * request) {
+  bool isAuthenticated = false;
+
+  if (request->authenticate(config.admin_httpuser.c_str(), config.admin_httppassword.c_str())) {
+    Serial.println("is authenticated via username and password");
+    isAuthenticated = true;
+  }
+  return isAuthenticated;
+}
+
+
+void log(String log)
+{
+  logfile.println(log);
+  logfile.flush();
 }

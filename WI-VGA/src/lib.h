@@ -22,8 +22,10 @@
 
 const char* default_ssid = "WGMA";
 const char* default_wifipassword = "WMGA01003576914@am";
-const char* default_httpuser = "admin";
-const char* default_httppassword = "admin";
+const char* default_httpuser = "user";
+const char* default_httppassword = "user";
+const char* default_admin_httpuser = "admin";
+const char* default_admin_httppassword = "admin";
 const int default_webserverporthttp = 80;
 const char* ssid_local = "MyCircuits";
 const char* wifipassword_local = "12345678";
@@ -33,12 +35,14 @@ const char* servername = "WI-VGA";
 
 // configuration structure
 struct Config {
- String ssid;               // wifi ssid
+  String ssid;               // wifi ssid
   String wifipassword;       // wifi password
   String ssid_local;               // wifi ssid
   String wifipassword_local;       // wifi password
-  String httpuser;           // username to access web admin
-  String httppassword;       // password to access web admin
+  String httpuser;           // username to access web 
+  String httppassword;       // password to access web 
+  String admin_httpuser;           // username to access web admin
+  String admin_httppassword;       // password to access web admin
   int webserverporthttp;     // http port number for web admin
   bool connect_wifi;
   bool create_AP;
@@ -48,8 +52,11 @@ struct Config {
 Config config;                        // configuration
 bool shouldReboot = false;            // schedule a reboot
 AsyncWebServer *server;               // initialise webserver
+bool time_out=false;
 
-
+bool is_pdf=false;
+uint32_t time_;
+File logfile;
 
 
 //if spiffs us it
@@ -121,6 +128,8 @@ String listDir_html(fs::FS &fs, String dirname, uint8_t levels);
 String listFiles();
 void update_config(String httpuser,String httppassword,int webserverporthttp,String ssid,String wifipassword,String ssid_local,String wifipassword_local,String servername,String connect_Wifi,String create_AP);
 bool String_To_Bool(String var){if(var=="true" || var=="1"){return true;}if(var=="false" || var=="0"){return false;}}
+bool checkUserWebAuth_Admin(AsyncWebServerRequest * request);
+void log(String log);
 
 inline const char * typeStr (int   var) { return " int "; }
 inline const char * typeStr (bool   var) { return " bool "; }
@@ -174,3 +183,19 @@ SPIClass spi = SPIClass(VSPI);
     1,
     NULL
   );*/
+  /*  //remove
+  server->on("/test", HTTP_GET, [](AsyncWebServerRequest * request) {
+    String logmessage = "Client:" + request->client()->remoteIP().toString() + + " " + request->url();
+
+    if (is_authenticated(request)) {
+      logmessage += " Auth: Success";
+      Serial.println(logmessage);
+      //request->send_P(200, "text/html", index_html, processor);
+      request->send(SD, "/web_app/test.html", String(), false);
+    } else {
+      logmessage += " Auth: Failed";
+      Serial.println(logmessage);
+      request->redirect("/loginpage");
+    }
+
+  });*/
