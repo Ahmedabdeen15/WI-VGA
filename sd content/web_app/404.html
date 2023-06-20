@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="wi-vga-logo.png"
+    />
+    <title>WI-VGA</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json" />
+    <!-- ios support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link
+      rel="apple-touch-icon"
+      href="android-launchericon-512-512.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="android-launchericon-72-72.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="android-launchericon-96-96.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="android-launchericon-48-48.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="android-launchericon-144-144.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="android-launchericon-192-192.png"
+    />
+
+    <meta name="apple-mobile-web-app-status-bar" content="#ABBAC2" />
+    <meta name="theme-color" content="#FFFFFF" />
+
+    <!-- navBar -->
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: sans-serif;
+      }
+
+      nav {
+        height: 6%;
+      }
+
+      nav a {
+        text-decoration: none;
+        color: whitesmoke;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+      }
+
+      /* nav styles */
+
+      .nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 20px;
+        background-color: #212529;
+      }
+
+      .logo {
+        font-size: 1.8rem;
+        color: whitesmoke;
+        padding-left: 20px;
+        font-weight: bold;
+        margin-bottom: 1%;
+      }
+
+      .hamburger {
+        padding-right: 20px;
+        cursor: pointer;
+      }
+
+      .hamburger .line {
+        display: block;
+        width: 40px;
+        height: 5px;
+        margin-bottom: 10px;
+        background-color: whitesmoke;
+      }
+
+      .nav__link {
+        position: fixed;
+        width: 100%;
+        top: 4.1rem;
+        background-color: #212529;
+      }
+
+      .nav__link a {
+        display: block;
+        text-align: center;
+        padding: 10px 0;
+      }
+
+      .nav__link a:hover {
+        color: whitesmoke;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      @media screen and (min-width: 600px) {
+        .nav__link {
+          display: block;
+          position: static;
+          width: auto;
+          margin-right: 20px;
+          background: none;
+        }
+
+        .nav__link a {
+          display: inline-block;
+          padding: 15px 20px;
+        }
+
+        .hamburger {
+          display: none;
+        }
+      }
+    </style>
+
+    <!-- page -->
+    <style>
+      h1 {
+        margin-top: 10%;
+        text-align: center;
+        font-size: 100px;
+      }
+      h1 span {
+        color: red;
+      }
+    </style>
+
+    <!-- <link rel="stylesheet" href="../assets/css/style.css" /> -->
+  </head>
+  <body>
+    <header>
+      <nav class="nav">
+        <a href="/" class="logo">WI-VGA</a>
+
+        <div class="hamburger">
+          <span class="line"></span>
+          <span class="line"></span>
+          <span class="line"></span>
+        </div>
+
+        <div class="nav__link hide">
+          <a href="/">home</a>
+          <a href="/logout">Logout</a>
+        </div>
+      </nav>
+    </header>
+
+    <section class="main">
+      <br />
+      <br />
+      <br />
+      <h1><span>404</span> NOT FOUND</h1>
+    </section>
+  </body>
+
+  <script>
+    const hamburger = document.querySelector(".hamburger");
+    const navLink = document.querySelector(".nav__link");
+
+    hamburger.addEventListener("click", () => {
+      navLink.classList.toggle("hide");
+    });
+  </script>
+</html>

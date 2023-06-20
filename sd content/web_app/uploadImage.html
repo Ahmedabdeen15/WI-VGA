@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="wi-vga-logo.png"
+    />
+    <title>WI-VGA</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json" />
+
+    <!-- NavBar -->
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: sans-serif;
+      }
+
+      nav {
+        height: 6%;
+      }
+
+      nav a {
+        text-decoration: none;
+        color: whitesmoke;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+      }
+
+      /* nav styles */
+
+      .nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 20px;
+        background-color: #212529;
+      }
+
+      .logo {
+        font-size: 1.8rem;
+        color: whitesmoke;
+        padding-left: 20px;
+        font-weight: bold;
+        margin-bottom: 1%;
+      }
+
+      .hamburger {
+        padding-right: 20px;
+        cursor: pointer;
+      }
+
+      .hamburger .line {
+        display: block;
+        width: 40px;
+        height: 5px;
+        margin-bottom: 10px;
+        background-color: whitesmoke;
+      }
+
+      .nav__link {
+        position: fixed;
+        width: 100%;
+        top: 4.1rem;
+        background-color: #212529;
+      }
+
+      .nav__link a {
+        display: block;
+        text-align: center;
+        padding: 10px 0;
+      }
+
+      .nav__link a:hover {
+        color: whitesmoke;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      @media screen and (min-width: 600px) {
+        .nav__link {
+          display: block;
+          position: static;
+          width: auto;
+          margin-right: 20px;
+          background: none;
+        }
+
+        .nav__link a {
+          display: inline-block;
+          padding: 15px 20px;
+        }
+
+        .hamburger {
+          display: none;
+        }
+      }
+    </style>
+
+    <style>
+      .container {
+        margin: 2%;
+      }
+
+      .tyrAgain {
+        background-color: #0d6efd;
+
+        color: #fff;
+
+        padding: 12px 20px;
+        border: none;
+        cursor: pointer;
+        font-size: large;
+        font-weight: bold;
+
+        border-radius: 5px;
+      }
+      .tyrAgain:hover {
+        background-color: #0b5ed7;
+      }
+
+      .upload {
+        background-color: #198754;
+
+        color: #fff;
+
+        padding: 12px 20px;
+        border: none;
+        cursor: pointer;
+        font-size: large;
+        font-weight: bold;
+
+        border-radius: 5px;
+      }
+      .upload:hover {
+        background-color: #157347;
+      }
+
+      .progress {
+        /* margin: 0 auto; */
+        width: 580px;
+      }
+
+      canvas {
+        margin-left: 25%;
+        width: 50%;
+      }
+
+      @media screen and (max-width: 600px) {
+        .progress {
+          width: 100%;
+        }
+
+        canvas {
+          margin-left: 5%;
+          width: 90%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <nav class="nav">
+        <a href="/" class="logo">WI-VGA</a>
+
+        <div class="hamburger">
+          <span class="line"></span>
+          <span class="line"></span>
+          <span class="line"></span>
+        </div>
+
+        <div class="nav__link hide">
+          <a href="/">home</a>
+          <a href="/logout">Logout</a>
+        </div>
+      </nav>
+    </header>
+
+    <div class="container">
+      <h2>Upload Images</h2>
+      <br />
+      <div class="menu">
+        <span class="block spritefiles">
+          <input
+            id="addimages"
+            type="file"
+            onchange="addFiles(event)"
+            accept="image/*"
+          />
+          <br />
+          <br />
+          <div class="btns">
+            <button class="tyrAgain" id="try" onclick="tryAgainHandler(event)">
+              Try Again
+            </button>
+
+            <button
+              title="Export sprite header"
+              class="upload"
+              onclick="saveHeader();"
+            >
+              Upload
+            </button>
+          </div>
+        </span>
+      </div>
+      <br />
+      <div class="progress">
+        <progress
+          id="progressBar"
+          value="0"
+          max="100"
+          style="width: 100%"
+        ></progress>
+        <h3 id="status"></h3>
+        <p id="loaded_n_total"></p>
+      </div>
+
+      <div class="hidden" id="files">
+        <div id="filearea"></div>
+      </div>
+      <br />
+      <hr />
+      <br />
+      <div id="sprites"></div>
+    </div>
+
+    <!-- nav -->
+    <script>
+      const hamburger = document.querySelector(".hamburger");
+      const navLink = document.querySelector(".nav__link");
+
+      hamburger.addEventListener("click", () => {
+        navLink.classList.toggle("hide");
+      });
+    </script>
+
+    <!-- upload -->
+    <script>
+      var project = {
+        name: "sprites",
+        zoom: 4,
+        sprites: [],
+        fileName: "",
+      };
+      
+      function _(el) {
+        return document.getElementById(el);
+      }
+
+      function draw(obj) {
+        console.log("draw");
+        var img = obj.ctx.getImageData(0, 0, obj.xres, obj.yres);
+        var p = 0;
+        for (var y = 0; y < obj.yres; y++)
+          for (var x = 0; x < obj.xres; x++) {
+            var a = obj.source[p + 3];
+            var ra = 255 - a;
+            img.data[p + 0] = Math.round(
+              (img.data[p + 0] * ra + obj.source[p + 0] * a) / 255
+            );
+            img.data[p + 1] = Math.round(
+              (img.data[p + 1] * ra + obj.source[p + 1] * a) / 255
+            );
+            img.data[p + 2] = Math.round(
+              (img.data[p + 2] * ra + obj.source[p + 2] * a) / 255
+            );
+            img.data[p + 3] = 255;
+            p += 4;
+          }
+        obj.ctx.putImageData(img, 0, 0);
+      }
+
+      function createCanvas(obj) {
+        console.log("createCanvas");
+        var canvas = (obj.canvas = document.createElement("canvas"));
+
+        canvas.width = obj.xres;
+        canvas.height = obj.yres;
+        var ctx = (obj.ctx = canvas.getContext("2d"));
+        console.log("obj", obj);
+      }
+
+      function addFile(file, id) {
+        console.log("addFile");
+        var obj = {
+          id: id,
+          name: file.name,
+          type: file.type,
+          xres: 0,
+          yres: 0,
+          points: [],
+        };
+
+        project.sprites.push(obj);
+        var reader = new FileReader();
+        reader.onload = function () {
+          var img = document.createElement("img");
+          img.onload = function () {
+            obj.xres = 350;
+            obj.yres = 260;
+            createCanvas(obj);
+            obj.ctx.drawImage(img, 0, 0, 350, 260);
+            obj.source = Array.from(
+              obj.ctx.getImageData(0, 0, obj.xres, obj.yres).data
+            );
+            obj.points.push([
+              Math.floor(obj.xres * 0.5),
+              Math.floor(obj.yres * 0.5),
+            ]);
+            update();
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function addFiles(event) {
+        console.log("addFiles");
+        for (var i = 0; i < event.target.files.length; i++) {
+          var file = event.target.files[i];
+          addFile(
+            file,
+            "f" +
+              file.name.replace(/[^A-Z0-9]/gi, "_") +
+              Math.floor(Math.random() * 1000000)
+          );
+          document.getElementById("addimages").disabled = true;
+        }
+        event.target.value = "";
+      }
+
+      function spritesToHeader(pixelformat) {
+        console.log("spritesToHeader");
+        var name = project.name;
+        var sprites = project.sprites;
+        var offsets = [0];
+        var pointOffsets = [0];
+        var rf, rshift, gf, gshift, bf, bshift, af, ashift, type, bytesPerPixel;
+
+        rf = gf = 31;
+        bf = 15;
+        af = 3;
+        rshift = 0;
+        gshift = 5;
+        bshift = 10;
+        ashift = 14;
+        type = "unsigned short";
+        bytesPerPixel = 2;
+
+        for (var i = 0; i < sprites.length; i++) {
+          offsets.push(
+            offsets[i] + (sprites[i].source.length / 4) * bytesPerPixel
+          );
+          pointOffsets.push(pointOffsets[i] + sprites[i].points.length);
+        }
+        var text = "";
+
+        var k = 0;
+        for (var i = 0; i < sprites.length; i++) {
+          var s = sprites[i].source;
+          console.log(s);
+          for (var j = 0; j < s.length; j += 4) {
+            var r = s[j + 0];
+            var g = s[j + 1];
+            var b = s[j + 2];
+            var a = s[j + 3];
+            var c = 0;
+            c =
+              ((Math.round((r / 255) * rf) << rshift) +
+                (Math.round((g / 255) * gf) << gshift) +
+                (Math.round((b / 255) * bf) << bshift) +
+                (Math.round((a / 255) * af) << ashift)) >>>
+              0;
+            text += "0x" + c.toString(16) + ", ";
+            k++;
+            if ((k & 31) == 0) text += "\n";
+          }
+        }
+        return text;
+      }
+
+      function addListItem(i, id, name, canvas) {
+        console.log("addListItem");
+        var spriteDiv = document.createElement("div");
+        spriteDiv.id = id;
+        spriteDiv.appendChild(canvas);
+        canvas.style.zoom = project.zoom;
+        var span = document.createElement("span");
+        span.className = "right";
+        // span.innerHTML = name;
+        spriteDiv.appendChild(span);
+        document.getElementById("sprites").appendChild(spriteDiv);
+      }
+
+      function saveHeader() {
+      console.log("saveHeader");
+      document.getElementById("filearea").innerHTML = "";
+      var fileArea = document.getElementById("filearea");
+      var file = document.createElement("a");
+      file.download = file.innerHTML = project.name + ".txt";
+      var e = document.getElementById("pixelformat");
+      var pixelformat = "R5G5B4A2";
+      file.href = URL.createObjectURL(
+        new Blob([spritesToHeader(pixelformat)], { type: "text/plain" })
+      );
+      sendTextAsFile(spritesToHeader(pixelformat),file.download);
+
+
+      document.getElementById("files").className = "menu";
+    }
+
+      function update() {
+        console.log("update");
+        for (var i = 0; i < project.sprites.length; i++)
+          if (!project.sprites[i].canvas) return;
+        // project.name = document.getElementById("name").value;
+
+        let nameWithoutEXT = project.sprites[0].name.split(".")[0];
+
+        project.name = nameWithoutEXT;
+        // project.zoom = document.getElementById("zoom").value;
+        project.zoom = 0;
+
+        document.getElementById("sprites").innerHTML = "";
+        for (var i = 0; i < project.sprites.length; i++) {
+          addListItem(
+            i,
+            project.sprites[i].id,
+            project.sprites[i].name,
+            project.sprites[i].canvas
+          );
+          draw(project.sprites[i]);
+        }
+        document.getElementById("files").className = "hidden";
+        document.getElementById("filearea").innerHTML = "";
+      }
+
+      function tryAgainHandler(event) {
+        localStorage.clear();
+        location.reload();
+      }
+
+      function sendTextAsFile(text,filename) {
+        var blob = new Blob([text], { type: "text/plain" });
+        var formdata = new FormData();
+        formdata.append("file", blob, filename);
+        var ajax = new XMLHttpRequest();
+        ajax.upload.addEventListener("progress", progressHandler, false);
+        ajax.addEventListener("load", completeHandler, false);
+        ajax.addEventListener("error", errorHandler, false);
+        ajax.addEventListener("abort", abortHandler, false);
+        ajax.open("POST", "/", true);
+        ajax.send(formdata);
+      }
+
+      function progressHandler(event) {
+        _("loaded_n_total").innerHTML = "Uploaded " + event.loaded + " bytes";
+        var percent = (event.loaded / event.total) * 100;
+        _("progressBar").value = Math.round(percent);
+        _("status").innerHTML = Math.round(percent) + "% uploaded... please wait";
+        if (percent >= 100) {
+          _("status").innerHTML = "Please wait, writing file to filesystem";
+        }
+      }
+      function completeHandler(event) {
+        _("status").innerHTML = "Upload Complete";
+        _("progressBar").value = 0;
+        xmlhttp=new XMLHttpRequest();
+        xmlhttp.open("GET", "/listfiles", false);
+        xmlhttp.send();
+        document.getElementById("status").innerHTML = "File Uploaded";
+        document.getElementById("details").innerHTML = xmlhttp.responseText;
+      }
+      function errorHandler(event) {
+        _("status").innerHTML = "Upload Failed";
+      }
+      function abortHandler(event) {
+        _("status").innerHTML = "inUpload Aborted";
+      }
+
+        </script>
+  </body>
+</html>

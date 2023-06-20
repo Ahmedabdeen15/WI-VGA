@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="wi-vga-logo.png"
+    />
+    <title>WI-VGA</title>
+    
+    <!-- NavBar -->
+    <style>
+      body {
+      display: none;
+    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: sans-serif;
+      }
+
+      nav {
+        height: 6%;
+        z-index: 2;
+      }
+
+      nav a {
+        text-decoration: none;
+        color: whitesmoke;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+      }
+
+      /* nav styles */
+
+      .nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 20px;
+        background-color: #212529;
+      }
+
+      .logo {
+        font-size: 1.8rem;
+        color: whitesmoke;
+        padding-left: 20px;
+        font-weight: bold;
+        margin-bottom: 1%;
+      }
+
+      .hamburger {
+        padding-right: 20px;
+        cursor: pointer;
+      }
+
+      .hamburger .line {
+        display: block;
+        width: 40px;
+        height: 5px;
+        margin-bottom: 10px;
+        background-color: whitesmoke;
+      }
+
+      .nav__link {
+        position: fixed;
+        width: 100%;
+        top: 4.1rem;
+        background-color: #212529;
+      }
+
+      .nav__link a {
+        display: block;
+        text-align: center;
+        padding: 10px 0;
+      }
+
+      .nav__link a:hover {
+        color: whitesmoke;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      @media screen and (min-width: 600px) {
+        .nav__link {
+          display: block;
+          position: static;
+          width: auto;
+          margin-right: 20px;
+          background: none;
+        }
+
+        .nav__link a {
+          display: inline-block;
+          padding: 15px 20px;
+        }
+
+        .hamburger {
+          display: none;
+        }
+      }
+    </style>
+
+    <style>
+      table {
+        margin-left: 2%;
+        border-collapse: collapse;
+        border-spacing: 0;
+        width: 96%;
+        /* border: 1px solid #000; */
+      }
+
+      th {
+        text-align: center;
+        padding: 1%;
+        font-size: x-large;
+        font-weight: bold;
+        /* border: 1px solid #000; */
+      }
+
+      td {
+        text-align: center;
+        padding: 16px;
+        font-weight: bold;
+        /* border: 1px solid #000; */
+      }
+
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+
+      .tableTop {
+        text-align: center;
+      }
+
+      .container a {
+        color: white;
+
+        margin: 0 auto;
+        padding: 5px 10px;
+
+        font-weight: bold;
+        font-size: 1.4rem;
+        text-align: center;
+        text-decoration: none;
+
+        border-radius: 5px;
+      }
+      .container button {
+        color: white;
+
+        margin: 0 auto;
+        padding: 5px 10px;
+
+        font-weight: bold;
+        font-size: 1.4rem;
+        text-align: center;
+        text-decoration: none;
+
+        border-radius: 5px;
+      }
+      .view {
+        background-color: #198754;
+      }
+      .view:hover {
+        background-color: #157347;
+      }
+
+      .delete {
+        background-color: #dc3545;
+      }
+
+      .delete:hover {
+        background-color: #b02a37;
+      }
+
+      .backParent {
+        padding-left: 2%;
+      }
+
+      .back {
+        width: 100px;
+        background-color: #0d6efd;
+      }
+
+      .back:hover {
+        background-color: #0b5ed7;
+      }
+
+      .back span {
+        margin-bottom: 100px;
+      }
+    </style>
+    <script>
+     function fetchJSONData() {
+      var xhr = new XMLHttpRequest();
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          var data = JSON.parse(xhr.responseText);
+          var html = "";
+          html+='<br /><div class=\"backParent\"><a href=\"/\" class="back"><span>←</span> back</a></div><br /><br /><h3 id=\"status\"></h3><div class=\"tableTop\"><h1>Uploaded Files</h1></div><br /><div style="overflow-x: auto"><table><tr><th>File Name</th><th>size</th><th>Delete</th></tr>';
+          data.forEach(function(item) {
+            /*<tr><td><p class="name">LOLA.js Lorem ipsum dolor sit,</p></td>
+            <td><p class='name'></p>3.536</td>
+            <td><button href="#" class="delete">Delete</button></td>
+          </tr>*/
+          
+          var nameWithoutExtension = item.name.replace(".txt", "");
+            html += "<tr><td><p class='name'> " + nameWithoutExtension + "</p></td>";
+            html += "<td><p class='name'></p> " + item.size + "</p></td>";
+            html += "<td><button onclick=\"downloadDeleteButton('/rendered_images/"+item.name+"', 'delete')\" class='delete'>Delete</button></td>";
+          });
+          
+          
+
+        }
+        html+='</table></div>';
+        document.getElementById("json-data").innerHTML = html;
+          document.body.style.display = "block"; // Show the page once the data is ready
+      };
+      xhr.open("GET", "http://wi-vga.local/api/listfiles?foldername=/rendered_images", true);
+      xhr.send();
+      
+    }
+</script>
+        <!-- PWA -->
+        <link rel="manifest" href="manifest.json" />
+  </head>
+
+
+  <body onload="fetchJSONData()">
+    <header>
+      <nav class="nav">
+        <a href="/" class="logo">WI-VGA</a>
+
+        <div class="hamburger">
+          <span class="line"></span>
+          <span class="line"></span>
+          <span class="line"></span>
+        </div>
+
+        <div class="nav__link hide">
+          <a href="/">home</a>
+          <a href="/logout">Logout</a>
+        </div>
+      </nav>
+    </header>
+
+    <div class="container" id="json-data">
+
+    </div>
+
+    <!-- nav -->
+    <script>
+      const hamburger = document.querySelector(".hamburger");
+      const navLink = document.querySelector(".nav__link");
+
+      hamburger.addEventListener("click", () => {
+        navLink.classList.toggle("hide");
+      });
+      function downloadDeleteButton(filename, action) {
+        console.log(filename);
+        console.log(action);
+        var urltocall = "/file?name=/" + filename + "&action=" + action;
+        xmlhttp=new XMLHttpRequest();
+        if (action == "delete") {
+          xmlhttp.open("GET", urltocall, false);
+          xmlhttp.send();
+          document.getElementById("status").innerHTML = xmlhttp.responseText;
+          fetchJSONData();
+        }
+        if (action == "download") {
+          document.getElementById("status").innerHTML = "";
+          window.open(urltocall,"_blank");
+        }
+      }
+
+      
+    </script>
+  </body>
+</html>
