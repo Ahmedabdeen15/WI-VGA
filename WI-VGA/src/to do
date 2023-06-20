@@ -1,0 +1,81 @@
+dev auth 
+error of delete
+delete all problem (clear the name after finish)
+error of update
+update succfully
+book 
+presenation
+Serial.println("\n\nNetwork Configuration:");
+      Serial.println("----------------------");
+      Serial.print("         SSID: "); Serial.println(WiFi.SSID());
+      Serial.print("  Wifi Status: "); Serial.println(WiFi.status());
+      Serial.print("Wifi Strength: "); Serial.print(WiFi.RSSI()); Serial.println(" dBm");
+      Serial.print("          MAC: "); Serial.println(WiFi.macAddress());
+      Serial.print("           IP: "); Serial.println(WiFi.localIP());
+      Serial.print("       Subnet: "); Serial.println(WiFi.subnetMask());
+      Serial.print("      Gateway: "); Serial.println(WiFi.gatewayIP());
+      Serial.print("        DNS 1: "); Serial.println(WiFi.dnsIP(0));
+      Serial.print("        DNS 2: "); Serial.println(WiFi.dnsIP(1));
+      Serial.print("        DNS 3: "); Serial.println(WiFi.dnsIP(2));
+      Serial.println();
+
+
+
+      void IMAGE_SHOW_AND_RENDER(void * param)
+{
+    while (true)
+    {
+        File root = SD.open("/rendered_images");
+        File image = root.openNextFile();
+        if(!image)
+        {
+          Sprites sprites(1, spritesPixels, spritesOffsets, spritesRes, spritesPoints, spritesPointOffsets, Sprites::PixelFormat::R5G5B4A2);
+
+          sprites.draw(vga,0, 160, 100);
+          
+          //show the rendering
+          //vga.show();
+          vTaskDelay(1000/portTICK_PERIOD_MS);
+        }
+        else
+          while(image){
+
+            // Time recorded for test purposes
+            t = millis();
+            image_path="/rendered_images/";
+            image_path+=image.name();
+            //Serial.println(image_path);
+            if(String(image.name()).endsWith(".txt")){
+              //Serial.print("Parsed integer");
+              int i;
+              for (i = 0; (i < no_pixel/2) && image.available(); i++)
+              {
+                sprites_Pixels[0][i] =(unsigned short)strtol(image.readStringUntil(',').c_str(), NULL, 0);
+                
+              }
+              vTaskDelay(1000/portTICK_PERIOD_MS);
+              while((i < no_pixel) && image.available())
+              {
+                sprites_Pixels[0][i] =(unsigned short)strtol(image.readStringUntil(',').c_str(), NULL, 0);
+                i++;
+              }
+          
+
+            Sprites sprites(1, sprites_Pixels, spritesOffsets, spritesRes, spritesPoints, spritesPointOffsets, Sprites::PixelFormat::R5G5B4A2);
+
+            sprites.draw(vga,0, 160, 100);
+            
+            //show the rendering
+            //vga.show();
+            t = millis() - t;
+            Serial.print(t); Serial.println(" ms");
+            vTaskDelay(1000/portTICK_PERIOD_MS);
+            }
+            image = root.openNextFile();
+            
+          }
+          
+    }
+    
+}
+

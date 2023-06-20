@@ -1,0 +1,19 @@
+{
+    "C_Cpp.errorSquiggles": "enabled",
+    "cmake.sourceDirectory": "G:/PUA/gradution project matrial/WI-VGA/embedded/WI-VGA/.pio/libdeps/esp wrover kit/ArduinoJson",
+    "files.associations": {
+        "string": "cpp",
+        "typeinfo": "cpp",
+        "array": "cpp",
+        "*.tcc": "cpp",
+        "deque": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "string_view": "cpp",
+        "memory": "cpp",
+        "random": "cpp",
+        "initializer_list": "cpp",
+        "regex": "cpp"
+    }
+}

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>JSON Data Display</title>
+  <script>
+    function fetchJSONData() {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          var data = JSON.parse(xhr.responseText);
+          var html = "";
+          data.forEach(function(item) {
+            html += "<p>Name: " + item.name + "</p>";
+            html += "<p>Size: " + item.size + "</p>";
+            html += "<hr>";
+          });
+          document.getElementById("json-data").innerHTML = html;
+        }
+      };
+      xhr.open("GET", "http://wi-vga.local/api/listfiles?foldername=/rendered_images", true);
+      xhr.send();
+    }
+  </script>
+</head>
+<body onload="fetchJSONData()">
+  <div id="json-data"></div>
+</body>
+</html>
