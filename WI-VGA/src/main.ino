@@ -6,7 +6,16 @@ AsyncWebServerResponse *response = request->beginResponse(301); //Sends 301 redi
 response->addHeader("Location", "/login.html?msg=" + msg);
 response->addHeader("Cache-Control", "no-cache");
 request->send(response);
-return;*/
+return;
+
+else if()
+        {
+          Sprites sprites(1, spritesPixels_loading, spritesOffsets, spritesRes, spritesPoints, spritesPointOffsets, Sprites::PixelFormat::R5G5B4A2);
+          sprites.draw(vga,0, 160, 100);
+          vTaskDelay(1000/portTICK_PERIOD_MS);
+        }
+
+*/
 
 void IMAGE_SHOW_AND_RENDER(void * param)
 {
@@ -14,15 +23,22 @@ void IMAGE_SHOW_AND_RENDER(void * param)
     {
         File root = SD.open("/rendered_images");
         File image = root.openNextFile();
-        if(!image)
+        if(!image|| loading)
         {
+          log("true");
           Sprites sprites(1, spritesPixels, spritesOffsets, spritesRes, spritesPoints, spritesPointOffsets, Sprites::PixelFormat::R5G5B4A2);
-
+          
           sprites.draw(vga,0, 160, 100);
-          vTaskDelay(1000/portTICK_PERIOD_MS);
+          if (loading)
+          {
+            vga.setCursor(115, 150);
+            vga.print("loading....");
+          }
+          vTaskDelay(20000/portTICK_PERIOD_MS);
         }
+        
         else
-          while(image){
+          while(image && !loading){
 
             // Time recorded for test purposes
             t = millis();
@@ -68,7 +84,7 @@ void IMAGE_SHOW_AND_RENDER(void * param)
             //vga.show();
             t = millis() - t;
             Serial.print(t); Serial.println(" ms");
-            vTaskDelay(100000/portTICK_PERIOD_MS);
+            vTaskDelay(50000/portTICK_PERIOD_MS);
             }
             image = root.openNextFile();
             
@@ -121,6 +137,12 @@ void loop() {
   if (shouldReboot) {
     shouldReboot=false;
     rebootESP("Web Admin Initiated Reboot");
+  }
+  if(millis()>=tokenCreationTime + (30 * 60 * 1000))
+  {
+    loading=false;
+    user=false;
+    tokenCreationTime=0;
   }
   vTaskDelay(10/portTICK_PERIOD_MS);
 }
@@ -248,8 +270,18 @@ void configureWebServer() {
 
   
   server->on("/loginpage", HTTP_GET, [](AsyncWebServerRequest * request) {
+    log("loginpage:");
+    if(user)
+    {
+      log("user:true that is write");
+      request->send(SD, "/web_app/error.html", String(), false);
+
+    }
     if(!is_authenticated(request))
+    {
+      log("user:false first time");
       request->send(SD, "/web_app/login.html", String(), false);
+    }
     else
       request->redirect("/");
 
@@ -644,7 +676,8 @@ void start_vga()
     //MODE320x240
     //MODE360x350
     //setting the font
-    //vga.setFont(Font6x8);
+    vga.setFont(Font6x8);
+    vga.setTextColor(vga.RGB(0, 0, 0));
   Sprites sprites(1, spritesPixels, spritesOffsets, spritesRes, spritesPoints, spritesPointOffsets, Sprites::PixelFormat::R5G5B4A2);
 
   sprites.draw(vga,0, 160, 100);
@@ -1004,27 +1037,35 @@ return hashStr;
 void handleLogin(AsyncWebServerRequest *request) {
 Serial.println("Handle login");
 String msg;
-if (request->hasHeader("Cookie")) {
-// Print cookies
-Serial.print("Found cookie: ");
-String cookie = request->header("Cookie");
-Serial.println(cookie);
-}
-if (request->hasArg("username") && request->hasArg("password")) {
-Serial.print("Found parameter: ");
-if (request->arg("username") == String(config.httpuser) && sha1_(request->arg("password")) ==String(config.httppassword)) {
-AsyncWebServerResponse *response = request->beginResponse(301); //Sends 301 redirect
-response->addHeader("Location", "/");
-response->addHeader("Cache-Control", "no-cache");
-String token = sha1_(String(config.httpuser) + ":" + String(config.httppassword) + ":" + request->client()->remoteIP().toString());
-Serial.print("Token: ");
-Serial.println(token);
-response->addHeader("Set-Cookie", "ESPSESSIONID=" + token);
-request->send(response);
-Serial.println("Log in Successful");
+if(!user){
+  if (request->hasHeader("Cookie")) {
+  // Print cookies
+  Serial.print("Found cookie: ");
+  String cookie = request->header("Cookie");
+  Serial.println(cookie);
+  }
+  if (request->hasArg("username") && request->hasArg("password")) {
+  Serial.print("Found parameter: ");
+  if (request->arg("username") == String(config.httpuser) && sha1_(request->arg("password")) ==String(config.httppassword)) {
+  AsyncWebServerResponse *response = request->beginResponse(301); //Sends 301 redirect
+  response->addHeader("Location", "/");
+  response->addHeader("Cache-Control", "no-cache");
+  // set current time to calculate expiration
+  tokenCreationTime =millis();
+  String token = sha1_(String(config.httpuser) + ":" +String(config.httppassword) + ":" +request->client()->remoteIP().toString()+":"+String(tokenCreationTime));
+  Serial.print("Token: ");
+  Serial.println(token);
+  response->addHeader("Set-Cookie", "ESPSESSIONID=" + token);
+  //loading image
+  loading=true;
+  log("true");
+  user=true;
+  request->send(response);
+  Serial.println("Log in Successful");
 
-return;
+  return;
 }
+
 msg = "Wrong username/password! try again.";
 Serial.println("Log in Failed");
 AsyncWebServerResponse *response = request->beginResponse(301); //Sends 301 redirect
@@ -1034,38 +1075,60 @@ request->send(response);
 return;
 }
 }
+else
+{
+  log("login.html?msg=ONLY SINGLE USER ALLOWED");
+  AsyncWebServerResponse *response = request->beginResponse(301); //Sends 301 redirect
+  response->addHeader("Location", "/login.html?msg=ONLY SINGLE USER ALLOWED");
+  response->addHeader("Cache-Control", "no-cache");
+  request->send(response);
+  return;
+}
+}
 /**
 * Manage logout (simply remove correct token and redirect to login form)
 */
 void handleLogout(AsyncWebServerRequest *request) {
 Serial.println("Disconnection");
 AsyncWebServerResponse *response = request->beginResponse(301); //Sends 301 redirect
-response->addHeader("Location", "/login.html?msg=User disconnected");
+response->addHeader("Location", "/loginpage");
 response->addHeader("Cache-Control", "no-cache");
 response->addHeader("Set-Cookie", "ESPSESSIONID=0");
 request->send(response);
+user=false;
+loading=false;
 return;
 }
 //Check if header is present and correct
 bool is_authenticated(AsyncWebServerRequest *request) {
-Serial.println("Enter is_authenticated");
-if (request->hasHeader("Cookie")) {
-Serial.print("Found cookie: ");
-String cookie = request->header("Cookie");
-Serial.println(cookie);
-String token = sha1_(String(config.httpuser) + ":" +String(config.httppassword) + ":" +request->client()->remoteIP().toString());
-//  token = sha1_(token);
-log(token);
-if (cookie.indexOf("ESPSESSIONID=" + token) != -1) {
-  Serial.println("Authentication Successful");
-  return true;
-}
-else
-  log("Authentication Failed_token problem");
-}
-log("Authentication Failed_End");
-Serial.println("Authentication Failed");
-return false;
+  Serial.println("Enter is_authenticated");
+
+  //Check if the token has expired
+  if(millis()<=tokenCreationTime + (30 * 60 * 1000))
+  {
+    log("check cookies token");
+    if (request->hasHeader("Cookie")) {
+      Serial.print("Found cookie: ");
+      String cookie = request->header("Cookie");
+      Serial.println(cookie);
+      String token = sha1_(String(config.httpuser) + ":" +String(config.httppassword) + ":" +request->client()->remoteIP().toString()+":"+String(tokenCreationTime));
+      //  token = sha1_(token);
+      log(token);
+      if (cookie.indexOf("ESPSESSIONID=" + token) != -1) {
+        Serial.println("Authentication Successful");
+        return true;
+      }
+      else
+        log("Authentication Failed_token problem");
+        return false;
+      }
+  }
+  else
+    handleLogout(request);
+
+  log("Authentication Failed_End or token time out");
+  Serial.println("Authentication Failed");
+  return false;
 }
 
 bool checkUserWebAuth_Admin(AsyncWebServerRequest * request) {

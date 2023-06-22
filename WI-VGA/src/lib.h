@@ -55,7 +55,9 @@ AsyncWebServer *server;               // initialise webserver
 bool time_out=false;
 
 bool is_pdf=false;
-uint32_t time_;
+uint32_t tokenCreationTime =0;
+bool user=false;
+bool loading=false;
 File logfile;
 
 
