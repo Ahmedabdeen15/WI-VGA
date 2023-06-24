@@ -34,7 +34,7 @@ void IMAGE_SHOW_AND_RENDER(void * param)
             vga.setCursor(115, 150);
             vga.print("loading....");
           }
-          vTaskDelay(20000/portTICK_PERIOD_MS);
+          vTaskDelay(50000/portTICK_PERIOD_MS);
         }
         
         else
@@ -144,7 +144,7 @@ void loop() {
     user=false;
     tokenCreationTime=0;
   }
-  vTaskDelay(10/portTICK_PERIOD_MS);
+  vTaskDelay(10000/portTICK_PERIOD_MS);
 }
 
 void rebootESP(String message) {
